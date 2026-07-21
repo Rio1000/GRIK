@@ -69,6 +69,13 @@ BUILTIN_AGENTS = {
         port=8000,
         env={},  # HASS_URL / HASS_TOKEN come from compose
     ),
+    "n8n": AgentSpec(
+        capability="n8n",
+        container="grik-agent-n8n",
+        image="grik-n8n-agent:latest",
+        port=8000,
+        env={},  # N8N_URL / N8N_API_KEY come from compose
+    ),
 }
 
 

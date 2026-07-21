@@ -19,12 +19,12 @@ no matching agent, Grik can **provision a new one on the spot**.
              │ delegate     ┌─────────────┐
    ┌─────────┼─────────┐    │ base-agent  │  ← cloned into a new
    ▼         ▼         ▼    │  (generic)  │    container per new task
-┌──────┐ ┌──────┐ ┌──────┐ └─────────────┘
-│media │ │ web  │ │ home │   each an isolated Docker container
-│agent │ │agent │ │agent │   exposing POST /execute
-└──┬───┘ └──┬───┘ └──┬───┘
-Radarr    search+   Home
-Sonarr    fetch     Assistant
+┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ └─────────────┘
+│media │ │ web  │ │ home │ │ n8n  │  each an isolated Docker
+│agent │ │agent │ │agent │ │agent │  container, POST /execute
+└──┬───┘ └──┬───┘ └──┬───┘ └──┬───┘
+Radarr    search+   Home     workflow
+Sonarr    fetch     Asst.    automation
 ```
 
 ## The Celtic bit — how it stays *understandable*
@@ -53,12 +53,14 @@ The character comes from two independent layers, so it never turns to mush:
 | Media agent | `agents/media_agent/` | Radarr + Sonarr. Copy the pattern for Lidarr, Prowlarr, Overseerr, Bazarr... |
 | Web agent | `agents/web_agent/` | Search (SearXNG) + fetch-and-read. |
 | Home agent | `agents/home_agent/` | Home Assistant: lights, switches, climate, scenes, automations, sensors. |
+| n8n agent | `agents/n8n_agent/` | n8n: list/run/create workflows, check executions, trigger webhooks. |
 | Base agent | `agents/base_agent/` | The blank specialist that gets cloned for new capabilities. |
 
 ## Setup
 
 1. `cp .env.example .env` and fill in keys: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`
-   + `GRIK_VOICE_ID`, `PICOVOICE_ACCESS_KEY`, `RADARR_API_KEY`, `HASS_TOKEN`, etc.
+   + `GRIK_VOICE_ID`, `PICOVOICE_ACCESS_KEY`, `RADARR_API_KEY`, `HASS_TOKEN`,
+   `N8N_API_KEY`, etc.
 2. Train a wake word: at <https://console.picovoice.ai> make a custom "Grik"
    (and/or "Hey Grik") keyword, download the `.ppn`, and point `GRIK_WAKE_PPN` at it.
 3. Build the agent images: `docker compose build`
@@ -81,9 +83,10 @@ docker compose --profile text run --rm grik
 ```
 
 Try: *"add the film Dune Part Two to the library"*, *"turn on the living room
-lights"*, *"set the thermostat to 21 degrees"*, *"what's the weather in
-Galway"*, or something with no existing agent — *"track the price of a GPU"* —
-and watch Grik provision a new agent for it.
+lights"*, *"set the thermostat to 21 degrees"*, *"run my backup workflow"*,
+*"show me failed n8n executions"*, *"what's the weather in Galway"*, or
+something with no existing agent — *"track the price of a GPU"* — and watch
+Grik provision a new agent for it.
 
 ## Adding a service (the common case)
 

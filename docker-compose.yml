@@ -47,6 +47,18 @@ services:
       HASS_TOKEN: ${HASS_TOKEN}
     restart: unless-stopped
 
+  n8n-agent:
+    build: { context: ., dockerfile: agents/n8n_agent/Dockerfile }
+    image: grik-n8n-agent:latest
+    container_name: grik-agent-n8n
+    networks: [grik-net]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      N8N_URL: ${N8N_URL:-http://n8n:5678}
+      N8N_API_KEY: ${N8N_API_KEY}
+    restart: unless-stopped
+
   # Build the generic base image so the manager can clone it on demand.
   base-agent:
     build: { context: ., dockerfile: agents/base_agent/Dockerfile }
@@ -78,5 +90,5 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock   # lets Grik manage agents
     stdin_open: true
     tty: true
-    depends_on: [media-agent, web-agent, home-agent]
+    depends_on: [media-agent, web-agent, home-agent, n8n-agent]
     profiles: ["text"]     # `docker compose --profile text run grik`
