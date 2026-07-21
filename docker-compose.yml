@@ -1,0 +1,82 @@
+# Grik agent fleet. The example media/web agents come up here; the manager can
+# also start/provision agents at runtime on the same network.
+#
+# The voice orchestrator normally runs on the HOST (it needs mic + speaker and
+# the Docker socket). See README. A text-mode 'grik' service is included for
+# quick end-to-end testing without audio.
+
+networks:
+  grik-net:
+    name: grik-net
+
+services:
+  media-agent:
+    build: { context: ., dockerfile: agents/media_agent/Dockerfile }
+    image: grik-media-agent:latest
+    container_name: grik-agent-media
+    networks: [grik-net]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      RADARR_URL: ${RADARR_URL:-http://radarr:7878}
+      RADARR_API_KEY: ${RADARR_API_KEY}
+      SONARR_URL: ${SONARR_URL:-http://sonarr:8989}
+      SONARR_API_KEY: ${SONARR_API_KEY}
+    restart: unless-stopped
+
+  web-agent:
+    build: { context: ., dockerfile: agents/web_agent/Dockerfile }
+    image: grik-web-agent:latest
+    container_name: grik-agent-web
+    networks: [grik-net]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      SEARX_URL: ${SEARX_URL:-http://searxng:8080}
+    restart: unless-stopped
+
+  home-agent:
+    build: { context: ., dockerfile: agents/home_agent/Dockerfile }
+    image: grik-home-agent:latest
+    container_name: grik-agent-home
+    networks: [grik-net]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      HASS_URL: ${HASS_URL:-http://homeassistant:8123}
+      HASS_TOKEN: ${HASS_TOKEN}
+    restart: unless-stopped
+
+  # Build the generic base image so the manager can clone it on demand.
+  base-agent:
+    build: { context: ., dockerfile: agents/base_agent/Dockerfile }
+    image: grik-base-agent:latest
+    command: ["true"]      # built, not run; provisioned per-task at runtime
+    restart: "no"
+
+  # Optional: private meta-search for the web agent.
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    networks: [grik-net]
+    environment:
+      SEARXNG_BASE_URL: http://searxng:8080/
+    restart: unless-stopped
+
+  # Optional: Grik brain in text mode (no audio) for quick testing.
+  grik:
+    build: { context: ., dockerfile: Dockerfile }
+    image: grik-orchestrator:latest
+    container_name: grik
+    networks: [grik-net]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      GRIK_TEXT_MODE: "true"
+      GRIK_ALLOW_PROVISIONING: ${GRIK_ALLOW_PROVISIONING:-true}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # lets Grik manage agents
+    stdin_open: true
+    tty: true
+    depends_on: [media-agent, web-agent, home-agent]
+    profiles: ["text"]     # `docker compose --profile text run grik`
