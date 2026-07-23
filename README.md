@@ -88,6 +88,30 @@ lights"*, *"set the thermostat to 21 degrees"*, *"run my backup workflow"*,
 something with no existing agent — *"track the price of a GPU"* — and watch
 Grik provision a new agent for it.
 
+For automation: *"every morning at 8, turn on the kitchen lights and send me
+a weather summary on Slack"* — Grik will search for similar existing n8n
+workflows, build off one if it finds a match, or assemble a new one from
+node templates and activate it.
+
+## Auto-provisioning: agents AND workflows
+
+Grik can self-provision in two ways:
+
+- **New agents** (`provision_agent`): when no existing capability fits a task,
+  Grik spins up a new Docker container from the generic base-agent image,
+  configured with a role prompt. This gives Grik a new permanent specialist.
+- **New workflows** (`automate`): when the user wants something to happen
+  *automatically* — on a schedule, via a webhook, or as a reusable automation —
+  Grik delegates to the n8n agent, which:
+  1. **Searches** existing workflows for a similar one.
+  2. **Duplicates and extends** it if one fits, preserving tested logic and
+     credentials.
+  3. **Builds from scratch** using node templates if nothing similar exists.
+
+  This means saying *"automate a nightly backup"* will reuse your existing
+  backup workflow's structure if you have one, rather than creating a
+  duplicate from nothing.
+
 ## Adding a service (the common case)
 
 Radarr, Sonarr, Lidarr, Prowlarr, Overseerr, Home Assistant — nearly all expose
