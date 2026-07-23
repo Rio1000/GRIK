@@ -67,6 +67,17 @@ The character comes from two independent layers, so it never turns to mush:
 
 ## Running
 
+**Web mode (talk to Grik from any device on your network):**
+```bash
+# on the host:
+GRIK_WEB_MODE=true python -m grik.main
+# or fully in Docker (recommended):
+docker compose up grik-web
+```
+Then open `http://<your-server-ip>:7777` on any phone, tablet, or laptop.
+The web UI supports text chat and voice input via your browser's microphone
+(Web Speech API — works in Chrome, Safari, Edge). No app to install.
+
 **Voice mode (on the host — needs mic, speaker, and Docker socket):**
 ```bash
 pip install -r requirements.txt

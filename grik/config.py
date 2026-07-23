@@ -35,8 +35,13 @@ class Config:
     agent_call_timeout: int = field(default_factory=lambda: int(os.getenv("GRIK_AGENT_TIMEOUT", "120")))
     allow_provisioning: bool = field(default_factory=lambda: _bool("GRIK_ALLOW_PROVISIONING", True))
 
+    # --- Web interface ---
+    web_host: str = field(default_factory=lambda: os.getenv("GRIK_WEB_HOST", "0.0.0.0"))
+    web_port: int = field(default_factory=lambda: int(os.getenv("GRIK_WEB_PORT", "7777")))
+
     # --- Modes ---
     text_mode: bool = field(default_factory=lambda: _bool("GRIK_TEXT_MODE", False))
+    web_mode: bool = field(default_factory=lambda: _bool("GRIK_WEB_MODE", False))
 
 
 config = Config()

@@ -1,9 +1,14 @@
-# Grik orchestrator (brain + voice). Runs on the host so it can reach mic/speaker.
+# Grik orchestrator (brain + voice + web). Runs on the host.
 anthropic>=0.40
 httpx>=0.27
 docker>=7.1
 
-# voice stack
+# web interface
+fastapi>=0.110
+uvicorn[standard]>=0.29
+websockets>=12
+
+# voice stack (only needed for voice mode, not web mode)
 pvporcupine>=3.0          # wake word ("Grik" / "Hey Grik")
 pvrecorder>=1.2
 sounddevice>=0.4          # mic capture + playback
