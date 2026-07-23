@@ -88,6 +88,11 @@ services:
       GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
       GRIK_WEB_MODE: "true"
       GRIK_ALLOW_PROVISIONING: ${GRIK_ALLOW_PROVISIONING:-true}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      GRIK_VOICE_ID: ${GRIK_VOICE_ID}
+      GRIK_TTS_MODEL: ${GRIK_TTS_MODEL:-eleven_turbo_v2_5}
+      GRIK_STT_MODEL: ${GRIK_STT_MODEL:-base.en}
+      GRIK_STT_DEVICE: ${GRIK_STT_DEVICE:-cpu}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on: [media-agent, web-agent, home-agent, n8n-agent]

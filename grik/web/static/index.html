@@ -25,6 +25,8 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
 .controls button.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);transition:background .3s}
 .status-dot.connected{background:var(--success)}
+.voice-badge{font-size:9px;padding:2px 6px;border-radius:4px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);margin-left:6px;white-space:nowrap}
+.voice-badge.elevenlabs{background:#1a2a1a;color:var(--success);border-color:#2a3a2a}
 
 /* messages */
 .messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
@@ -40,6 +42,9 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
 @keyframes bounce{to{opacity:.3;transform:translateY(-4px)}}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
+/* audio playing indicator */
+.msg.grik.speaking{border-color:var(--accent);box-shadow:0 0 12px rgba(79,140,255,.15)}
+
 /* input */
 .input-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
 .input-bar textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-size:14px;font-family:inherit;resize:none;outline:none;max-height:120px;line-height:1.4}
@@ -52,6 +57,7 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
 .btn-mic{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim)}
 .btn-mic:hover{border-color:var(--accent);color:var(--text)}
 .btn-mic.recording{background:var(--danger);border-color:var(--danger);color:#fff;animation:pulse 1.5s infinite}
+.btn-mic.transcribing{background:var(--accent);border-color:var(--accent);color:#fff;animation:none}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,79,94,.4)}50%{box-shadow:0 0 0 8px rgba(255,79,94,0)}}
 
 /* mobile */
@@ -68,6 +74,7 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
       <div class="status-dot" id="statusDot"></div>
       <h1><span>G</span>rik</h1>
       <span class="subtitle">General Roaming of Internet Knowledge</span>
+      <span class="voice-badge" id="voiceBadge" style="display:none"></span>
     </div>
     <div class="controls">
       <button id="btnTts" title="Toggle spoken replies">&#x1f50a;</button>
@@ -80,7 +87,7 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
   </div>
 
   <div class="input-bar">
-    <button class="btn-icon btn-mic" id="btnMic" title="Hold to talk">
+    <button class="btn-icon btn-mic" id="btnMic" title="Tap to talk">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
     </button>
     <textarea id="input" rows="1" placeholder="Type a message..." autocomplete="off"></textarea>
@@ -99,6 +106,7 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
   const btnTts = document.getElementById('btnTts');
   const btnClear = document.getElementById('btnClear');
   const statusDot = document.getElementById('statusDot');
+  const voiceBadge = document.getElementById('voiceBadge');
 
   let ws = null;
   let sessionId = localStorage.getItem('grik-session') || crypto.randomUUID();
@@ -107,17 +115,50 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
   let thinkingEl = null;
   let isRecording = false;
   let recognition = null;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let currentAudio = null;
+  let lastGrikMsg = null;
+
+  // server capabilities (filled on load)
+  let serverTts = false;
+  let serverStt = false;
 
   if (ttsEnabled) btnTts.classList.add('active');
+
+  // --- Detect capabilities ---
+  async function detectCapabilities() {
+    try {
+      const r = await fetch('/api/capabilities');
+      const caps = await r.json();
+      serverTts = caps.tts;
+      serverStt = caps.stt;
+    } catch(e) {
+      serverTts = false;
+      serverStt = false;
+    }
+    // show badge
+    if (serverTts) {
+      voiceBadge.textContent = 'ElevenLabs voice';
+      voiceBadge.classList.add('elevenlabs');
+    } else if ('speechSynthesis' in window) {
+      voiceBadge.textContent = 'Browser voice';
+    } else {
+      voiceBadge.textContent = 'Text only';
+    }
+    voiceBadge.style.display = '';
+
+    // set up mic: prefer browser Web Speech API, fall back to server STT
+    setupMic();
+  }
+  detectCapabilities();
 
   // --- WebSocket ---
   function connect() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(`${proto}//${location.host}/ws/${sessionId}`);
 
-    ws.onopen = () => {
-      statusDot.classList.add('connected');
-    };
+    ws.onopen = () => statusDot.classList.add('connected');
 
     ws.onclose = () => {
       statusDot.classList.remove('connected');
@@ -133,7 +174,7 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
         showThinking();
       } else if (data.type === 'reply') {
         removeThinking();
-        addMessage('grik', data.text);
+        lastGrikMsg = addMessage('grik', data.text);
         if (ttsEnabled) speak(data.text);
       }
     };
@@ -153,6 +194,7 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
     div.appendChild(body);
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
+    return div;
   }
 
   function showThinking() {
@@ -169,8 +211,8 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
   }
 
   // --- Send ---
-  function send() {
-    const text = input.value.trim();
+  function send(text) {
+    text = text || input.value.trim();
     if (!text || !ws || ws.readyState !== 1) return;
     addMessage('user', text);
     ws.send(JSON.stringify({ text }));
@@ -178,22 +220,34 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
     autoResize();
   }
 
-  btnSend.addEventListener('click', send);
+  btnSend.addEventListener('click', () => send());
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   });
 
-  // auto-resize textarea
   function autoResize() {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
   }
   input.addEventListener('input', autoResize);
 
-  // --- Voice input (Web Speech API) ---
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  // --- Mic setup ---
+  function setupMic() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  if (SpeechRecognition) {
+    if (SpeechRecognition) {
+      // browser STT available — use it (no server round-trip)
+      setupBrowserSTT(SpeechRecognition);
+    } else if (serverStt) {
+      // no browser STT but server has faster-whisper
+      setupServerSTT();
+    } else {
+      // no STT at all
+      btnMic.style.display = 'none';
+    }
+  }
+
+  function setupBrowserSTT(SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
@@ -201,10 +255,7 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
 
     recognition.onresult = (e) => {
       const transcript = e.results[0][0].transcript;
-      if (transcript.trim()) {
-        input.value = transcript;
-        send();
-      }
+      if (transcript.trim()) send(transcript);
     };
 
     recognition.onend = () => {
@@ -220,21 +271,120 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
       }
     };
 
-    btnMic.addEventListener('click', () => {
-      if (isRecording) {
-        recognition.stop();
-      } else {
-        isRecording = true;
-        btnMic.classList.add('recording');
-        recognition.start();
-      }
-    });
-  } else {
-    btnMic.style.display = 'none';
+    btnMic.addEventListener('click', toggleBrowserSTT);
   }
 
-  // --- TTS (browser Speech Synthesis) ---
-  function speak(text) {
+  function toggleBrowserSTT() {
+    if (isRecording) {
+      recognition.stop();
+    } else {
+      isRecording = true;
+      btnMic.classList.add('recording');
+      recognition.start();
+    }
+  }
+
+  function setupServerSTT() {
+    btnMic.addEventListener('click', toggleServerSTT);
+  }
+
+  async function toggleServerSTT() {
+    if (isRecording) {
+      // stop recording & send to server
+      isRecording = false;
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream, { mimeType: getMimeType() });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        btnMic.classList.remove('recording');
+        btnMic.classList.add('transcribing');
+
+        const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+        const form = new FormData();
+        form.append('audio', blob, 'recording.webm');
+
+        try {
+          const r = await fetch('/api/stt', { method: 'POST', body: form });
+          const data = await r.json();
+          if (data.text && data.text.trim()) {
+            send(data.text.trim());
+          }
+        } catch(e) {
+          addMessage('system', 'Transcription failed: ' + e.message);
+        }
+        btnMic.classList.remove('transcribing');
+      };
+
+      isRecording = true;
+      btnMic.classList.add('recording');
+      mediaRecorder.start();
+    } catch(e) {
+      addMessage('system', 'Mic access denied: ' + e.message);
+    }
+  }
+
+  function getMimeType() {
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
+    if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm';
+    if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
+    return '';
+  }
+
+  // --- TTS ---
+  async function speak(text) {
+    stopAudio();
+    if (serverTts) {
+      await speakElevenLabs(text);
+    } else {
+      speakBrowser(text);
+    }
+  }
+
+  async function speakElevenLabs(text) {
+    if (lastGrikMsg) lastGrikMsg.classList.add('speaking');
+    try {
+      const r = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!r.ok) { speakBrowser(text); return; }
+
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      currentAudio = new Audio(url);
+      currentAudio.onended = () => {
+        URL.revokeObjectURL(url);
+        if (lastGrikMsg) lastGrikMsg.classList.remove('speaking');
+        currentAudio = null;
+      };
+      currentAudio.onerror = () => {
+        URL.revokeObjectURL(url);
+        if (lastGrikMsg) lastGrikMsg.classList.remove('speaking');
+        currentAudio = null;
+        speakBrowser(text);
+      };
+      currentAudio.play();
+    } catch(e) {
+      if (lastGrikMsg) lastGrikMsg.classList.remove('speaking');
+      speakBrowser(text);
+    }
+  }
+
+  function speakBrowser(text) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
@@ -245,8 +395,17 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
       /english.*\b(ir|uk|scot)/i.test(v.name) || /\b(moira|fiona|daniel)\b/i.test(v.name)
     );
     if (preferred) utter.voice = preferred;
+    if (lastGrikMsg) lastGrikMsg.classList.add('speaking');
+    utter.onend = () => { if (lastGrikMsg) lastGrikMsg.classList.remove('speaking'); };
     window.speechSynthesis.speak(utter);
   }
+
+  function stopAudio() {
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    document.querySelectorAll('.msg.speaking').forEach(el => el.classList.remove('speaking'));
+  }
+
   if ('speechSynthesis' in window) {
     window.speechSynthesis.onvoiceschanged = () => {};
   }
@@ -255,11 +414,12 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
     ttsEnabled = !ttsEnabled;
     btnTts.classList.toggle('active', ttsEnabled);
     localStorage.setItem('grik-tts', ttsEnabled);
-    if (!ttsEnabled) window.speechSynthesis?.cancel();
+    if (!ttsEnabled) stopAudio();
   });
 
   // --- Clear ---
   btnClear.addEventListener('click', () => {
+    stopAudio();
     sessionId = crypto.randomUUID();
     localStorage.setItem('grik-session', sessionId);
     messages.innerHTML = '<div class="msg system">New conversation started.</div>';
@@ -267,7 +427,6 @@ header .subtitle{font-size:11px;color:var(--text-dim);margin-left:8px}
     connect();
   });
 
-  // focus input on load (desktop)
   if (window.innerWidth > 600) input.focus();
 })();
 </script>
