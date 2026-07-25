@@ -1,47 +1,61 @@
 """
 Wake-word detection.
 
-Grik stays deaf until it hears its name. We use Picovoice Porcupine with a
-custom keyword file ("Grik" / "Hey Grik") that you train for free at
-https://console.picovoice.ai — download the .ppn and point GRIK_WAKE_PPN at it.
+Grik stays deaf until it hears its name. We use OpenWakeWord — fully open
+source, runs locally, no account or API key needed.
 
-Nothing is streamed anywhere before the wake word fires: audio is processed
-locally, frame by frame, and discarded.
+The bundled "hey_jarvis" model is used by default (closest to "Hey Grik").
+To train a custom "Grik" wake word, see:
+  https://github.com/dscripka/openWakeWord#training-new-models
+
+Nothing is streamed anywhere: audio is processed locally, frame by frame,
+and discarded.
 """
 from __future__ import annotations
 
 import logging
 
-import pvporcupine
-from pvrecorder import PvRecorder
+import numpy as np
+import sounddevice as sd
+from openwakeword.model import Model
 
-from .config import config
+from ..config import config
 
 log = logging.getLogger("grik.wake")
+
+SAMPLE_RATE = 16000
+FRAME_SAMPLES = 1280  # 80ms at 16kHz — the chunk size OpenWakeWord expects
 
 
 class WakeWord:
     def __init__(self):
-        self.porcupine = pvporcupine.create(
-            access_key=config.picovoice_access_key,
-            keyword_paths=[config.wake_keyword_path],
-            sensitivities=[config.wake_sensitivity],
-        )
-        self.recorder = PvRecorder(frame_length=self.porcupine.frame_length, device_index=-1)
+        model_paths = config.wake_model_paths
+        if model_paths:
+            self.model = Model(wakeword_models=model_paths,
+                               inference_framework=config.wake_framework)
+        else:
+            self.model = Model(inference_framework=config.wake_framework)
+
+        self.threshold = config.wake_sensitivity
+        self.model_names = list(self.model.models.keys())
+        log.info("Wake word models loaded: %s (threshold=%.2f)",
+                 self.model_names, self.threshold)
 
     def wait(self) -> None:
         """Block until the wake word is heard."""
-        self.recorder.start()
-        log.info("Listening for 'Grik'...")
-        try:
+        log.info("Listening for wake word...")
+        with sd.RawInputStream(samplerate=SAMPLE_RATE, blocksize=FRAME_SAMPLES,
+                               dtype="int16", channels=1) as stream:
             while True:
-                pcm = self.recorder.read()
-                if self.porcupine.process(pcm) >= 0:
-                    log.info("Wake word detected.")
-                    return
-        finally:
-            self.recorder.stop()
+                block, _ = stream.read(FRAME_SAMPLES)
+                audio = np.frombuffer(block, dtype=np.int16)
+                predictions = self.model.predict(audio)
+                for name in self.model_names:
+                    if predictions[name] >= self.threshold:
+                        log.info("Wake word detected: %s (score=%.2f)",
+                                 name, predictions[name])
+                        self.model.reset()
+                        return
 
     def close(self):
-        self.recorder.delete()
-        self.porcupine.delete()
+        pass

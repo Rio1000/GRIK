@@ -13,11 +13,12 @@ class Config:
     anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
     brain_model: str = field(default_factory=lambda: os.getenv("GRIK_BRAIN_MODEL", "claude-sonnet-4-6"))
 
-    # --- Voice: wake word (Picovoice Porcupine) ---
-    picovoice_access_key: str = field(default_factory=lambda: os.getenv("PICOVOICE_ACCESS_KEY", ""))
-    # Path to a custom "Grik" / "Hey Grik" keyword file trained at console.picovoice.ai
-    wake_keyword_path: str = field(default_factory=lambda: os.getenv("GRIK_WAKE_PPN", "keywords/grik.ppn"))
-    wake_sensitivity: float = field(default_factory=lambda: float(os.getenv("GRIK_WAKE_SENSITIVITY", "0.6")))
+    # --- Voice: wake word (OpenWakeWord) ---
+    wake_model_paths: list[str] = field(default_factory=lambda: [
+        p.strip() for p in os.getenv("GRIK_WAKE_MODELS", "").split(",") if p.strip()
+    ])
+    wake_framework: str = field(default_factory=lambda: os.getenv("GRIK_WAKE_FRAMEWORK", "onnx"))
+    wake_sensitivity: float = field(default_factory=lambda: float(os.getenv("GRIK_WAKE_SENSITIVITY", "0.5")))
 
     # --- Voice: speech to text (local faster-whisper) ---
     stt_model: str = field(default_factory=lambda: os.getenv("GRIK_STT_MODEL", "base.en"))
