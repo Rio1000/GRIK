@@ -9,8 +9,8 @@ uvicorn[standard]>=0.29
 websockets>=12
 
 # voice stack (only needed for voice mode, not web mode)
-pvporcupine>=3.0          # wake word ("Grik" / "Hey Grik")
-pvrecorder>=1.2
+openwakeword>=0.6         # wake word — open source, no API key needed
+numpy>=1.24
 sounddevice>=0.4          # mic capture + playback
 faster-whisper>=1.0       # local speech-to-text
 elevenlabs>=1.0           # Celtic-accented text-to-speech

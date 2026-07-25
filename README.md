@@ -8,7 +8,7 @@ no matching agent, Grik can **provision a new one on the spot**.
 ```
         "Hey Grik..."
              │
-        ┌────▼─────┐  wake word (Porcupine, local)
+        ┌────▼─────┐  wake word (OpenWakeWord, local)
         │  VOICE   │  speech-to-text (faster-whisper, local)
         │  LOOP    │  text-to-speech (ElevenLabs, Celtic voice)
         └────┬─────┘
@@ -44,7 +44,7 @@ The character comes from two independent layers, so it never turns to mush:
 
 | Piece | File | Notes |
 |---|---|---|
-| Wake word | `grik/voice/wakeword.py` | Porcupine; only wakes on "Grik"/"Hey Grik". Audio is local until then. |
+| Wake word | `grik/voice/wakeword.py` | OpenWakeWord (open source); listens for "Hey Jarvis" by default. Audio stays local. |
 | STT | `grik/voice/stt.py` | Local faster-whisper — your speech isn't shipped off for transcription. |
 | TTS | `grik/voice/tts.py` | ElevenLabs streaming, low latency. |
 | Brain | `grik/brain.py` | Anthropic tool-use loop: delegate / provision. |
@@ -59,10 +59,11 @@ The character comes from two independent layers, so it never turns to mush:
 ## Setup
 
 1. `cp .env.example .env` and fill in keys: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`
-   + `GRIK_VOICE_ID`, `PICOVOICE_ACCESS_KEY`, `RADARR_API_KEY`, `HASS_TOKEN`,
-   `N8N_API_KEY`, etc.
-2. Train a wake word: at <https://console.picovoice.ai> make a custom "Grik"
-   (and/or "Hey Grik") keyword, download the `.ppn`, and point `GRIK_WAKE_PPN` at it.
+   + `GRIK_VOICE_ID`, `RADARR_API_KEY`, `HASS_TOKEN`, `N8N_API_KEY`, etc.
+2. **(Optional)** Train a custom wake word. The bundled "hey_jarvis" model works
+   out of the box — no account or API key needed. To train a custom "Grik" wake
+   word, see <https://github.com/dscripka/openWakeWord#training-new-models>,
+   then set `GRIK_WAKE_MODELS` to the path(s) of your `.onnx` model file(s).
 3. Build the agent images: `docker compose build`
 
 ## Running
@@ -147,7 +148,7 @@ tool functions hitting that API, register the image in `BUILTIN_AGENTS`
   network, and consider a rootless Docker socket proxy instead of mounting
   `/var/run/docker.sock` directly. If you later add a code-generation path
   (Grik *writing* new agent code), sandbox the build/run and require a human OK.
-- **API drift.** ElevenLabs, Porcupine, faster-whisper and the *arr APIs all move.
+- **API drift.** ElevenLabs, OpenWakeWord, faster-whisper and the *arr APIs all move.
   The code targets their current shapes; check their docs if a call 400s.
 
 ## Layout
