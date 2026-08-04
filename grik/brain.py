@@ -56,6 +56,31 @@ TOOLS = [
             "required": ["capability", "role_prompt"],
         },
     },
+    {
+        "name": "automate",
+        "description": (
+            "Create or extend an n8n workflow to automate a recurring or triggerable "
+            "task. Delegates to the n8n agent, which will search for similar existing "
+            "workflows and build off them when possible, or build a new one from "
+            "templates. Use this when the user wants something to happen automatically "
+            "(on a schedule, on a trigger, or as a reusable automation) rather than "
+            "as a one-shot action."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_description": {
+                    "type": "string",
+                    "description": (
+                        "Plain-language description of what the automation should do, "
+                        "including triggers (schedule, webhook, event), actions, and "
+                        "any conditions."
+                    ),
+                },
+            },
+            "required": ["task_description"],
+        },
+    },
 ]
 
 
@@ -73,6 +98,13 @@ class Grik:
             return self.manager.delegate(args["capability"], args["instruction"])
         if name == "provision_agent":
             return self.manager.provision_agent(args["capability"], args["role_prompt"])
+        if name == "automate":
+            instruction = (
+                f"AUTO-PROVISION WORKFLOW: {args['task_description']}\n\n"
+                "Search for similar existing workflows first. If one is close enough, "
+                "duplicate and modify it. Otherwise build a new one from node templates."
+            )
+            return self.manager.delegate("n8n", instruction)
         return f"Unknown tool: {name}"
 
     def ask(self, user_text: str) -> str:

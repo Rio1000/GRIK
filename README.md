@@ -8,7 +8,7 @@ no matching agent, Grik can **provision a new one on the spot**.
 ```
         "Hey Grik..."
              │
-        ┌────▼─────┐  wake word (Porcupine, local)
+        ┌────▼─────┐  wake word (OpenWakeWord, local)
         │  VOICE   │  speech-to-text (faster-whisper, local)
         │  LOOP    │  text-to-speech (ElevenLabs, Celtic voice)
         └────┬─────┘
@@ -19,12 +19,12 @@ no matching agent, Grik can **provision a new one on the spot**.
              │ delegate     ┌─────────────┐
    ┌─────────┼─────────┐    │ base-agent  │  ← cloned into a new
    ▼         ▼         ▼    │  (generic)  │    container per new task
-┌──────┐ ┌──────┐ ┌──────┐ └─────────────┘
-│media │ │ web  │ │ home │   each an isolated Docker container
-│agent │ │agent │ │agent │   exposing POST /execute
-└──┬───┘ └──┬───┘ └──┬───┘
-Radarr    search+   Home
-Sonarr    fetch     Assistant
+┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ └─────────────┘
+│media │ │ web  │ │ home │ │ n8n  │  each an isolated Docker
+│agent │ │agent │ │agent │ │agent │  container, POST /execute
+└──┬───┘ └──┬───┘ └──┬───┘ └──┬───┘
+Radarr    search+   Home     workflow
+Sonarr    fetch     Asst.    automation
 ```
 
 ## The Celtic bit — how it stays *understandable*
@@ -44,7 +44,7 @@ The character comes from two independent layers, so it never turns to mush:
 
 | Piece | File | Notes |
 |---|---|---|
-| Wake word | `grik/voice/wakeword.py` | Porcupine; only wakes on "Grik"/"Hey Grik". Audio is local until then. |
+| Wake word | `grik/voice/wakeword.py` | OpenWakeWord (open source); listens for "Hey Jarvis" by default. Audio stays local. |
 | STT | `grik/voice/stt.py` | Local faster-whisper — your speech isn't shipped off for transcription. |
 | TTS | `grik/voice/tts.py` | ElevenLabs streaming, low latency. |
 | Brain | `grik/brain.py` | Anthropic tool-use loop: delegate / provision. |
@@ -53,17 +53,31 @@ The character comes from two independent layers, so it never turns to mush:
 | Media agent | `agents/media_agent/` | Radarr + Sonarr. Copy the pattern for Lidarr, Prowlarr, Overseerr, Bazarr... |
 | Web agent | `agents/web_agent/` | Search (SearXNG) + fetch-and-read. |
 | Home agent | `agents/home_agent/` | Home Assistant: lights, switches, climate, scenes, automations, sensors. |
+| n8n agent | `agents/n8n_agent/` | n8n: list/run/create workflows, check executions, trigger webhooks. |
 | Base agent | `agents/base_agent/` | The blank specialist that gets cloned for new capabilities. |
 
 ## Setup
 
 1. `cp .env.example .env` and fill in keys: `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`
-   + `GRIK_VOICE_ID`, `PICOVOICE_ACCESS_KEY`, `RADARR_API_KEY`, `HASS_TOKEN`, etc.
-2. Train a wake word: at <https://console.picovoice.ai> make a custom "Grik"
-   (and/or "Hey Grik") keyword, download the `.ppn`, and point `GRIK_WAKE_PPN` at it.
+   + `GRIK_VOICE_ID`, `RADARR_API_KEY`, `HASS_TOKEN`, `N8N_API_KEY`, etc.
+2. **(Optional)** Train a custom wake word. The bundled "hey_jarvis" model works
+   out of the box — no account or API key needed. To train a custom "Grik" wake
+   word, see <https://github.com/dscripka/openWakeWord#training-new-models>,
+   then set `GRIK_WAKE_MODELS` to the path(s) of your `.onnx` model file(s).
 3. Build the agent images: `docker compose build`
 
 ## Running
+
+**Web mode (talk to Grik from any device on your network):**
+```bash
+# on the host:
+GRIK_WEB_MODE=true python -m grik.main
+# or fully in Docker (recommended):
+docker compose up grik-web
+```
+Then open `http://<your-server-ip>:7777` on any phone, tablet, or laptop.
+The web UI supports text chat and voice input via your browser's microphone
+(Web Speech API — works in Chrome, Safari, Edge). No app to install.
 
 **Voice mode (on the host — needs mic, speaker, and Docker socket):**
 ```bash
@@ -81,9 +95,34 @@ docker compose --profile text run --rm grik
 ```
 
 Try: *"add the film Dune Part Two to the library"*, *"turn on the living room
-lights"*, *"set the thermostat to 21 degrees"*, *"what's the weather in
-Galway"*, or something with no existing agent — *"track the price of a GPU"* —
-and watch Grik provision a new agent for it.
+lights"*, *"set the thermostat to 21 degrees"*, *"run my backup workflow"*,
+*"show me failed n8n executions"*, *"what's the weather in Galway"*, or
+something with no existing agent — *"track the price of a GPU"* — and watch
+Grik provision a new agent for it.
+
+For automation: *"every morning at 8, turn on the kitchen lights and send me
+a weather summary on Slack"* — Grik will search for similar existing n8n
+workflows, build off one if it finds a match, or assemble a new one from
+node templates and activate it.
+
+## Auto-provisioning: agents AND workflows
+
+Grik can self-provision in two ways:
+
+- **New agents** (`provision_agent`): when no existing capability fits a task,
+  Grik spins up a new Docker container from the generic base-agent image,
+  configured with a role prompt. This gives Grik a new permanent specialist.
+- **New workflows** (`automate`): when the user wants something to happen
+  *automatically* — on a schedule, via a webhook, or as a reusable automation —
+  Grik delegates to the n8n agent, which:
+  1. **Searches** existing workflows for a similar one.
+  2. **Duplicates and extends** it if one fits, preserving tested logic and
+     credentials.
+  3. **Builds from scratch** using node templates if nothing similar exists.
+
+  This means saying *"automate a nightly backup"* will reuse your existing
+  backup workflow's structure if you have one, rather than creating a
+  duplicate from nothing.
 
 ## Adding a service (the common case)
 
@@ -109,7 +148,7 @@ tool functions hitting that API, register the image in `BUILTIN_AGENTS`
   network, and consider a rootless Docker socket proxy instead of mounting
   `/var/run/docker.sock` directly. If you later add a code-generation path
   (Grik *writing* new agent code), sandbox the build/run and require a human OK.
-- **API drift.** ElevenLabs, Porcupine, faster-whisper and the *arr APIs all move.
+- **API drift.** ElevenLabs, OpenWakeWord, faster-whisper and the *arr APIs all move.
   The code targets their current shapes; check their docs if a call 400s.
 
 ## Layout

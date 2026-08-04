@@ -47,6 +47,18 @@ services:
       HASS_TOKEN: ${HASS_TOKEN}
     restart: unless-stopped
 
+  n8n-agent:
+    build: { context: ., dockerfile: agents/n8n_agent/Dockerfile }
+    image: grik-n8n-agent:latest
+    container_name: grik-agent-n8n
+    networks: [grik-net]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      N8N_URL: ${N8N_URL:-http://n8n:5678}
+      N8N_API_KEY: ${N8N_API_KEY}
+    restart: unless-stopped
+
   # Build the generic base image so the manager can clone it on demand.
   base-agent:
     build: { context: ., dockerfile: agents/base_agent/Dockerfile }
@@ -61,6 +73,29 @@ services:
     networks: [grik-net]
     environment:
       SEARXNG_BASE_URL: http://searxng:8080/
+    restart: unless-stopped
+
+  # Web UI: talk to Grik from any device on the network.
+  grik-web:
+    build: { context: ., dockerfile: Dockerfile.web }
+    image: grik-web:latest
+    container_name: grik-web
+    networks: [grik-net]
+    ports:
+      - "${GRIK_WEB_PORT:-7777}:7777"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      GRIK_WEB_MODE: "true"
+      GRIK_ALLOW_PROVISIONING: ${GRIK_ALLOW_PROVISIONING:-true}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      GRIK_VOICE_ID: ${GRIK_VOICE_ID}
+      GRIK_TTS_MODEL: ${GRIK_TTS_MODEL:-eleven_turbo_v2_5}
+      GRIK_STT_MODEL: ${GRIK_STT_MODEL:-base.en}
+      GRIK_STT_DEVICE: ${GRIK_STT_DEVICE:-cpu}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on: [media-agent, web-agent, home-agent, n8n-agent]
     restart: unless-stopped
 
   # Optional: Grik brain in text mode (no audio) for quick testing.
@@ -78,5 +113,5 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock   # lets Grik manage agents
     stdin_open: true
     tty: true
-    depends_on: [media-agent, web-agent, home-agent]
+    depends_on: [media-agent, web-agent, home-agent, n8n-agent]
     profiles: ["text"]     # `docker compose --profile text run grik`

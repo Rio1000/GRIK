@@ -1,8 +1,9 @@
 """
 Grik entrypoint.
 
-  python -m grik.main            # full voice mode (needs mic + all keys)
-  GRIK_TEXT_MODE=true python -m grik.main   # type instead of talk (great for dev)
+  python -m grik.main                       # full voice mode (mic + all keys)
+  GRIK_TEXT_MODE=true python -m grik.main    # type instead of talk (dev)
+  GRIK_WEB_MODE=true python -m grik.main    # web UI on port 7777
 """
 import logging
 
@@ -13,7 +14,10 @@ from .brain import Grik
 def main():
     logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
 
-    if config.text_mode:
+    if config.web_mode:
+        from .web.server import run
+        run()
+    elif config.text_mode:
         grik = Grik()
         print("Grik (text mode). Type a command, or 'quit'.\n")
         while True:
