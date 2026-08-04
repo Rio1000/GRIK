@@ -7,7 +7,7 @@
 
 networks:
   grik-net:
-    name: grik-net
+    external: true
 
 services:
   media-agent:
