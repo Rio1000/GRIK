@@ -6,7 +6,7 @@ import logging
 
 from faster_whisper import WhisperModel
 
-from .config import config
+from ..config import config
 
 log = logging.getLogger("grik.stt")
 

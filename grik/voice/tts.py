@@ -13,7 +13,7 @@ import logging
 from elevenlabs.client import ElevenLabs
 from elevenlabs import stream as play_stream
 
-from .config import config
+from ..config import config
 
 log = logging.getLogger("grik.tts")
 
