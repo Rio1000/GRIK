@@ -28,11 +28,17 @@ class Config:
     stt_model: str = field(default_factory=lambda: os.getenv("GRIK_STT_MODEL", "base.en"))
     stt_device: str = field(default_factory=lambda: os.getenv("GRIK_STT_DEVICE", "auto"))
 
-    # --- Voice: text to speech (ElevenLabs) ---
+    # --- Voice: text to speech ---
+    # "elevenlabs" = server-side ElevenLabs synth (paid voice quality);
+    # "browser"    = web UI uses the browser's Web Speech API, voice loop silent;
+    # "off"        = TTS disabled everywhere.
+    tts_mode: str = field(default_factory=lambda: os.getenv("GRIK_TTS_MODE", "elevenlabs").lower())
     elevenlabs_api_key: str = field(default_factory=lambda: os.getenv("ELEVENLABS_API_KEY", ""))
-    # A voice with an Irish/Scottish lilt. Pick one in your ElevenLabs library.
     elevenlabs_voice_id: str = field(default_factory=lambda: os.getenv("GRIK_VOICE_ID", ""))
     elevenlabs_model: str = field(default_factory=lambda: os.getenv("GRIK_TTS_MODEL", "eleven_turbo_v2_5"))
+
+    # --- Brain: persistent memory (file the LLM reads/writes across restarts) ---
+    memory_path: str = field(default_factory=lambda: os.getenv("GRIK_MEMORY_PATH", os.path.expanduser("~/.grik/memory.md")))
 
     # --- Agent orchestration (Docker) ---
     docker_network: str = field(default_factory=lambda: os.getenv("GRIK_DOCKER_NETWORK", "grik-net"))

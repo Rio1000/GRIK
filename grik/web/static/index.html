@@ -129,8 +129,19 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   const statusDot = document.getElementById('statusDot');
   const voiceBadge = document.getElementById('voiceBadge');
 
+  // crypto.randomUUID is only exposed in secure contexts (https or localhost).
+  // Grik gets accessed over plain http on LAN / Tailscale IPs too, so fall back.
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (crypto.getRandomValues(new Uint8Array(1))[0]) & 15;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
   let ws = null;
-  let sessionId = localStorage.getItem('grik-session') || crypto.randomUUID();
+  let sessionId = localStorage.getItem('grik-session') || uuid();
   localStorage.setItem('grik-session', sessionId);
   let ttsEnabled = localStorage.getItem('grik-tts') !== 'false';
   let thinkingEl = null;
@@ -441,7 +452,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   // --- Clear ---
   btnClear.addEventListener('click', () => {
     stopAudio();
-    sessionId = crypto.randomUUID();
+    sessionId = uuid();
     localStorage.setItem('grik-session', sessionId);
     messages.innerHTML = '<div class="msg system">New conversation started.</div>';
     if (ws) ws.close();

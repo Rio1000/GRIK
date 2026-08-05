@@ -45,6 +45,10 @@ def _get_tts():
     global _tts_client
     if _tts_client is not None:
         return _tts_client
+    if config.tts_mode != "elevenlabs":
+        log.info("TTS mode=%s — server TTS disabled, frontend will use browser Speech API",
+                 config.tts_mode)
+        return None
     if not config.elevenlabs_api_key or not config.elevenlabs_voice_id:
         return None
     try:
