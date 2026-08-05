@@ -1,7 +1,7 @@
 """
-Web agent — Grik's window on the internet.
+Web agent — Wullie's window on the internet.
 
-Gives Grik broad web reach: search + fetch-and-read. Uses a SearXNG instance
+Gives Wullie broad web reach: search + fetch-and-read. Uses a SearXNG instance
 (self-hosted, private meta-search) by default so you're not tied to one
 provider; swap SEARX_URL for any search API you prefer.
 """
@@ -28,7 +28,7 @@ def web_search(query: str) -> str:
 def fetch_page(url: str) -> str:
     """Fetch a URL and return its readable text (truncated)."""
     r = httpx.get(url, timeout=30, follow_redirects=True,
-                  headers={"User-Agent": "GrikBot/1.0"})
+                  headers={"User-Agent": "WullieBot/1.0"})
     r.raise_for_status()
     tree = HTMLParser(r.text)
     for tag in tree.css("script, style, nav, footer, header"):
@@ -44,7 +44,7 @@ TOOLS = [
          "input_schema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}}),
 ]
 
-ROLE = """You are Grik's web specialist. Answer the instruction by searching the
+ROLE = """You are Wullie's web specialist. Answer the instruction by searching the
 web and, when useful, fetching a page to read it. Cite the URLs you used.
 Give a concise, factual answer."""
 

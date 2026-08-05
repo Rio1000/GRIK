@@ -1,4 +1,4 @@
-# Grik orchestrator (brain + voice + web). Runs on the host.
+# Wullie orchestrator (brain + voice + web). Runs on the host.
 # The brain routes through Claude Code (via claude-agent-sdk) so it uses your
 # Claude subscription, not paid API credits. The `anthropic` package stays for
 # specialist Docker agents that still hit the API directly.

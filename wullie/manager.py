@@ -1,5 +1,5 @@
 """
-AgentManager — Grik's hands.
+AgentManager — Wullie's hands.
 
 Responsibilities:
   * Keep a registry of capabilities -> agent containers.
@@ -10,7 +10,7 @@ Responsibilities:
 
 Each agent is a small FastAPI service exposing POST /execute
     {"instruction": "...", "context": {...}}  ->  {"result": "..."}
-All agents share a Docker network so Grik can reach them by container name.
+All agents share a Docker network so Wullie can reach them by container name.
 """
 from __future__ import annotations
 
@@ -30,13 +30,13 @@ except ImportError:  # docker SDK optional in text/dev mode
 
 from .config import config
 
-log = logging.getLogger("grik.manager")
+log = logging.getLogger("wullie.manager")
 
 
 @dataclass
 class AgentSpec:
     capability: str          # short slug, e.g. "media", "web", "home"
-    container: str           # docker container name, e.g. "grik-agent-media"
+    container: str           # docker container name, e.g. "wullie-agent-media"
     image: str               # docker image to run
     port: int = 8000         # port the agent listens on inside the network
     role_prompt: str = ""    # for provisioned generic agents
@@ -46,33 +46,33 @@ class AgentSpec:
         return f"http://{self.container}:{self.port}/execute"
 
 
-# Capabilities that ship with Grik. Provisioned ones get added at runtime.
+# Capabilities that ship with Wullie. Provisioned ones get added at runtime.
 BUILTIN_AGENTS = {
     "media": AgentSpec(
         capability="media",
-        container="grik-agent-media",
-        image="grik-media-agent:latest",
+        container="wullie-agent-media",
+        image="wullie-media-agent:latest",
         port=8000,
         env={},  # RADARR_URL / RADARR_API_KEY etc. come from compose
     ),
     "web": AgentSpec(
         capability="web",
-        container="grik-agent-web",
-        image="grik-web-agent:latest",
+        container="wullie-agent-web",
+        image="wullie-web-agent:latest",
         port=8000,
         env={},
     ),
     "home": AgentSpec(
         capability="home",
-        container="grik-agent-home",
-        image="grik-home-agent:latest",
+        container="wullie-agent-home",
+        image="wullie-home-agent:latest",
         port=8000,
         env={},  # HASS_URL / HASS_TOKEN come from compose
     ),
     "n8n": AgentSpec(
         capability="n8n",
-        container="grik-agent-n8n",
-        image="grik-n8n-agent:latest",
+        container="wullie-agent-n8n",
+        image="wullie-n8n-agent:latest",
         port=8000,
         env={},  # N8N_URL / N8N_API_KEY come from compose
     ),
@@ -115,7 +115,7 @@ class AgentManager:
         Uses the generic base-agent image, configured by a role prompt.
         """
         if not config.allow_provisioning:
-            return "Provisioning is disabled by config (GRIK_ALLOW_PROVISIONING=false)."
+            return "Provisioning is disabled by config (WULLIE_ALLOW_PROVISIONING=false)."
         if self._client is None:
             return "Cannot provision: Docker daemon is not reachable."
 
@@ -125,7 +125,7 @@ class AgentManager:
 
         spec = AgentSpec(
             capability=capability,
-            container=f"grik-agent-{capability}",
+            container=f"wullie-agent-{capability}",
             image=config.base_agent_image,
             port=8000,
             role_prompt=role_prompt,
@@ -159,7 +159,7 @@ class AgentManager:
 
         env = {
             "ANTHROPIC_API_KEY": config.anthropic_api_key,
-            "GRIK_BRAIN_MODEL": config.brain_model,
+            "WULLIE_BRAIN_MODEL": config.brain_model,
             "AGENT_NAME": spec.capability,
             "AGENT_ROLE_PROMPT": spec.role_prompt,
             **(spec.env or {}),
@@ -172,7 +172,7 @@ class AgentManager:
             network=config.docker_network,
             environment=env,
             restart_policy={"Name": "unless-stopped"},
-            labels={"grik.agent": spec.capability},
+            labels={"wullie.agent": spec.capability},
         )
         self._wait_healthy(spec)
 

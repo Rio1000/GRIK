@@ -1,9 +1,9 @@
 """
 Base agent — the blank specialist.
 
-When Grik meets a task with no matching agent, the manager launches THIS image
+When Wullie meets a task with no matching agent, the manager launches THIS image
 in a new container, configured with a role prompt supplied at provision time
-(env AGENT_ROLE_PROMPT). That's how Grik grows a new specialist for a specific
+(env AGENT_ROLE_PROMPT). That's how Wullie grows a new specialist for a specific
 job without shipping new code.
 
 It ships with one broad, general-purpose tool — an authenticated HTTP client —
@@ -17,7 +17,7 @@ from agentlib import Tool, make_agent_app
 
 AGENT_NAME = os.getenv("AGENT_NAME", "generic")
 ROLE = os.getenv("AGENT_ROLE_PROMPT") or (
-    "You are a general-purpose Grik agent. Complete the instruction using your "
+    "You are a general-purpose Wullie agent. Complete the instruction using your "
     "http_request tool where an external service is involved, and answer concisely."
 )
 

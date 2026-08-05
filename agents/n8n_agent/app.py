@@ -1,10 +1,10 @@
 """
-n8n agent — Grik's workflow automation specialist.
+n8n agent — Wullie's workflow automation specialist.
 
 Talks to an n8n instance via its REST API (v1).
 Set N8N_URL and N8N_API_KEY.
 
-Supports auto-provisioning: when Grik receives a task that should be an
+Supports auto-provisioning: when Wullie receives a task that should be an
 automated workflow, this agent can find similar existing workflows and
 extend them, or build a new one from node templates.
 """
@@ -657,7 +657,7 @@ TOOLS = [
     }),
 ]
 
-ROLE = """You are Grik's workflow automation specialist. You manage an n8n
+ROLE = """You are Wullie's workflow automation specialist. You manage an n8n
 instance — listing, creating, executing, activating, and deactivating workflows,
 checking execution history, and triggering webhooks.
 

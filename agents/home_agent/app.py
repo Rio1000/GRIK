@@ -1,5 +1,5 @@
 """
-Home Assistant agent — Grik's smart-home specialist.
+Home Assistant agent — Wullie's smart-home specialist.
 
 Talks to a Home Assistant instance via its REST API.
 Set HASS_URL and HASS_TOKEN (a long-lived access token).
@@ -233,7 +233,7 @@ TOOLS = [
     }),
 ]
 
-ROLE = """You are Grik's smart-home specialist. You control a Home Assistant
+ROLE = """You are Wullie's smart-home specialist. You control a Home Assistant
 instance — lights, switches, climate, covers, fans, media players, scenes,
 automations, and sensors.
 

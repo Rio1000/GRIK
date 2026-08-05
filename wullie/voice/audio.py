@@ -14,7 +14,7 @@ import logging
 
 import sounddevice as sd
 
-log = logging.getLogger("grik.audio")
+log = logging.getLogger("wullie.audio")
 
 SAMPLE_RATE = 16000
 FRAME_MS = 30

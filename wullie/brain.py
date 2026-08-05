@@ -1,11 +1,11 @@
 """
-Grik's brain — powered by the Claude Agent SDK / Claude Code CLI.
+Wullie's brain — powered by the Claude Agent SDK / Claude Code CLI.
 
 Routes through the local `claude` CLI, which authenticates via your Claude
-subscription (Pro / Max) and its rolling 5-hour usage bucket, so Grik costs
+subscription (Pro / Max) and its rolling 5-hour usage bucket, so Wullie costs
 nothing beyond your existing subscription instead of paid API credits.
 
-The tool-use loop keeps the same shape as before: Grik decides which
+The tool-use loop keeps the same shape as before: Wullie decides which
 specialist agent should do the work, delegates to it, then speaks a short
 answer. The four tools (list_capabilities, delegate, provision_agent,
 automate) are exposed as an in-process MCP server so Claude Code can call
@@ -34,7 +34,7 @@ from .config import config
 from .manager import AgentManager
 from .personality import system_prompt
 
-log = logging.getLogger("grik.brain")
+log = logging.getLogger("wullie.brain")
 
 
 def _pick_claude_cli() -> str | None:
@@ -67,7 +67,7 @@ def _build_tools(manager: AgentManager):
 
     @tool(
         "list_capabilities",
-        "List the specialist agents/capabilities Grik can currently delegate to.",
+        "List the specialist agents/capabilities Wullie can currently delegate to.",
         {},
     )
     async def list_capabilities(args):
@@ -166,7 +166,7 @@ def _build_tools(manager: AgentManager):
     return [list_capabilities, delegate, provision_agent, automate, read_memory, update_memory]
 
 
-class Grik:
+class Wullie:
     """
     Sync facade around an async ClaudeSDKClient.
 
@@ -185,7 +185,7 @@ class Grik:
         os.environ.pop("ANTHROPIC_API_KEY", None)
 
         tools = _build_tools(self.manager)
-        server = create_sdk_mcp_server(name="grik", tools=tools)
+        server = create_sdk_mcp_server(name="wullie", tools=tools)
 
         sys_prompt = system_prompt(self.manager.capabilities_summary())
         memory = _read_memory().strip()
@@ -206,14 +206,14 @@ class Grik:
         options = ClaudeAgentOptions(
             system_prompt=sys_prompt,
             model=config.brain_model,
-            mcp_servers={"grik": server},
-            allowed_tools=[f"mcp__grik__{t.name}" for t in tools],
+            mcp_servers={"wullie": server},
+            allowed_tools=[f"mcp__wullie__{t.name}" for t in tools],
             cli_path=_pick_claude_cli(),
         )
 
         self._loop = asyncio.new_event_loop()
         self._loop_thread = threading.Thread(
-            target=self._loop.run_forever, daemon=True, name="grik-brain-loop"
+            target=self._loop.run_forever, daemon=True, name="wullie-brain-loop"
         )
         self._loop_thread.start()
 
@@ -224,7 +224,7 @@ class Grik:
         log.info("brain ready (model=%s, via Claude Code subscription)", config.brain_model)
 
     def ask(self, user_text: str) -> str:
-        """One full turn: user text in, Grik's spoken reply out."""
+        """One full turn: user text in, Wullie's spoken reply out."""
         return asyncio.run_coroutine_threadsafe(
             self._ask_async(user_text), self._loop
         ).result()

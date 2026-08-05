@@ -1,23 +1,23 @@
-# Grik agent fleet. The example media/web agents come up here; the manager can
+# Wullie agent fleet. The example media/web agents come up here; the manager can
 # also start/provision agents at runtime on the same network.
 #
 # The voice orchestrator normally runs on the HOST (it needs mic + speaker and
-# the Docker socket). See README. A text-mode 'grik' service is included for
+# the Docker socket). See README. A text-mode 'wullie' service is included for
 # quick end-to-end testing without audio.
 
 networks:
-  grik-net:
+  wullie-net:
     external: true
 
 services:
   media-agent:
     build: { context: ., dockerfile: agents/media_agent/Dockerfile }
-    image: grik-media-agent:latest
-    container_name: grik-agent-media
-    networks: [grik-net]
+    image: wullie-media-agent:latest
+    container_name: wullie-agent-media
+    networks: [wullie-net]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      WULLIE_BRAIN_MODEL: ${WULLIE_BRAIN_MODEL:-claude-sonnet-4-6}
       RADARR_URL: ${RADARR_URL:-http://radarr:7878}
       RADARR_API_KEY: ${RADARR_API_KEY}
       SONARR_URL: ${SONARR_URL:-http://sonarr:8989}
@@ -26,35 +26,35 @@ services:
 
   web-agent:
     build: { context: ., dockerfile: agents/web_agent/Dockerfile }
-    image: grik-web-agent:latest
-    container_name: grik-agent-web
-    networks: [grik-net]
+    image: wullie-web-agent:latest
+    container_name: wullie-agent-web
+    networks: [wullie-net]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      WULLIE_BRAIN_MODEL: ${WULLIE_BRAIN_MODEL:-claude-sonnet-4-6}
       SEARX_URL: ${SEARX_URL:-http://searxng:8080}
     restart: unless-stopped
 
   home-agent:
     build: { context: ., dockerfile: agents/home_agent/Dockerfile }
-    image: grik-home-agent:latest
-    container_name: grik-agent-home
-    networks: [grik-net]
+    image: wullie-home-agent:latest
+    container_name: wullie-agent-home
+    networks: [wullie-net]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      WULLIE_BRAIN_MODEL: ${WULLIE_BRAIN_MODEL:-claude-sonnet-4-6}
       HASS_URL: ${HASS_URL:-http://homeassistant:8123}
       HASS_TOKEN: ${HASS_TOKEN}
     restart: unless-stopped
 
   n8n-agent:
     build: { context: ., dockerfile: agents/n8n_agent/Dockerfile }
-    image: grik-n8n-agent:latest
-    container_name: grik-agent-n8n
-    networks: [grik-net]
+    image: wullie-n8n-agent:latest
+    container_name: wullie-agent-n8n
+    networks: [wullie-net]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
+      WULLIE_BRAIN_MODEL: ${WULLIE_BRAIN_MODEL:-claude-sonnet-4-6}
       N8N_URL: ${N8N_URL:-http://n8n:5678}
       N8N_API_KEY: ${N8N_API_KEY}
     restart: unless-stopped
@@ -62,7 +62,7 @@ services:
   # Build the generic base image so the manager can clone it on demand.
   base-agent:
     build: { context: ., dockerfile: agents/base_agent/Dockerfile }
-    image: grik-base-agent:latest
+    image: wullie-base-agent:latest
     command: ["true"]      # built, not run; provisioned per-task at runtime
     restart: "no"
 
@@ -70,48 +70,48 @@ services:
   searxng:
     image: searxng/searxng:latest
     container_name: searxng
-    networks: [grik-net]
+    networks: [wullie-net]
     environment:
       SEARXNG_BASE_URL: http://searxng:8080/
     restart: unless-stopped
 
-  # Web UI: talk to Grik from any device on the network.
-  grik-web:
+  # Web UI: talk to Wullie from any device on the network.
+  wullie-web:
     build: { context: ., dockerfile: Dockerfile.web }
-    image: grik-web:latest
-    container_name: grik-web
-    networks: [grik-net]
+    image: wullie-web:latest
+    container_name: wullie-web
+    networks: [wullie-net]
     ports:
-      - "${GRIK_WEB_PORT:-7777}:7777"
+      - "${WULLIE_WEB_PORT:-7777}:7777"
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
-      GRIK_WEB_MODE: "true"
-      GRIK_ALLOW_PROVISIONING: ${GRIK_ALLOW_PROVISIONING:-true}
+      WULLIE_BRAIN_MODEL: ${WULLIE_BRAIN_MODEL:-claude-sonnet-4-6}
+      WULLIE_WEB_MODE: "true"
+      WULLIE_ALLOW_PROVISIONING: ${WULLIE_ALLOW_PROVISIONING:-true}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
-      GRIK_VOICE_ID: ${GRIK_VOICE_ID}
-      GRIK_TTS_MODEL: ${GRIK_TTS_MODEL:-eleven_turbo_v2_5}
-      GRIK_STT_MODEL: ${GRIK_STT_MODEL:-base.en}
-      GRIK_STT_DEVICE: ${GRIK_STT_DEVICE:-cpu}
+      WULLIE_VOICE_ID: ${WULLIE_VOICE_ID}
+      WULLIE_TTS_MODEL: ${WULLIE_TTS_MODEL:-eleven_turbo_v2_5}
+      WULLIE_STT_MODEL: ${WULLIE_STT_MODEL:-base.en}
+      WULLIE_STT_DEVICE: ${WULLIE_STT_DEVICE:-cpu}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on: [media-agent, web-agent, home-agent, n8n-agent]
     restart: unless-stopped
 
-  # Optional: Grik brain in text mode (no audio) for quick testing.
-  grik:
+  # Optional: Wullie brain in text mode (no audio) for quick testing.
+  wullie:
     build: { context: ., dockerfile: Dockerfile }
-    image: grik-orchestrator:latest
-    container_name: grik
-    networks: [grik-net]
+    image: wullie-orchestrator:latest
+    container_name: wullie
+    networks: [wullie-net]
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      GRIK_BRAIN_MODEL: ${GRIK_BRAIN_MODEL:-claude-sonnet-4-6}
-      GRIK_TEXT_MODE: "true"
-      GRIK_ALLOW_PROVISIONING: ${GRIK_ALLOW_PROVISIONING:-true}
+      WULLIE_BRAIN_MODEL: ${WULLIE_BRAIN_MODEL:-claude-sonnet-4-6}
+      WULLIE_TEXT_MODE: "true"
+      WULLIE_ALLOW_PROVISIONING: ${WULLIE_ALLOW_PROVISIONING:-true}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock   # lets Grik manage agents
+      - /var/run/docker.sock:/var/run/docker.sock   # lets Wullie manage agents
     stdin_open: true
     tty: true
     depends_on: [media-agent, web-agent, home-agent, n8n-agent]
-    profiles: ["text"]     # `docker compose --profile text run grik`
+    profiles: ["text"]     # `docker compose --profile text run wullie`

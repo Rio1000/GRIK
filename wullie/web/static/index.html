@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Grik</title>
+<title>Wullie</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --bg:#0a0d0a;--surface:#0e130e;--surface2:#131a13;--border:#2f5c34;
   --text:#39ff6a;--text-dim:#3a8f4a;--accent:#ffb000;--accent-dim:#cc8c00;
-  --user-bg:#0f2313;--grik-bg:#0c1a0e;--danger:#ff4136;--success:#39ff6a;
+  --user-bg:#0f2313;--wullie-bg:#0c1a0e;--danger:#ff4136;--success:#39ff6a;
 }
 html,body{height:100%;font-family:"Share Tech Mono","Courier New",monospace;background:var(--bg);color:var(--text)}
 
@@ -49,12 +50,12 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
 .messages::-webkit-scrollbar-track{background:var(--bg)}
 .msg{max-width:85%;padding:10px 14px;border-radius:0;font-size:14px;line-height:1.5;word-wrap:break-word;animation:fadeIn .15s ease}
 .msg.user{align-self:flex-end;background:var(--user-bg);border:1px solid var(--border);border-right:3px solid var(--text-dim)}
-.msg.grik{align-self:flex-start;background:var(--grik-bg);border:1px solid var(--border);border-left:3px solid var(--accent)}
+.msg.wullie{align-self:flex-start;background:var(--wullie-bg);border:1px solid var(--border);border-left:3px solid var(--accent)}
 .msg.system{align-self:center;color:var(--text-dim);font-size:12px}
 .msg.system::before{content:"# "}
 .msg .label{font-size:11px;color:var(--text-dim);margin-bottom:4px;font-weight:400;text-transform:uppercase;letter-spacing:1px}
 .msg .label::before{content:"> "}
-.thinking{align-self:flex-start;display:flex;gap:5px;padding:12px 18px;border:1px solid var(--border);background:var(--grik-bg)}
+.thinking{align-self:flex-start;display:flex;gap:5px;padding:12px 18px;border:1px solid var(--border);background:var(--wullie-bg)}
 .thinking span{width:7px;height:7px;border-radius:0;background:var(--accent);box-shadow:0 0 4px var(--accent);animation:bounce .6s infinite alternate}
 .thinking span:nth-child(2){animation-delay:.2s}
 .thinking span:nth-child(3){animation-delay:.4s}
@@ -62,7 +63,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* audio playing indicator */
-.msg.grik.speaking{border-color:var(--accent);box-shadow:0 0 14px rgba(255,176,0,.25)}
+.msg.wullie.speaking{border-color:var(--accent);box-shadow:0 0 14px rgba(255,176,0,.25)}
 
 /* input */
 .input-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0}
@@ -93,8 +94,8 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   <header>
     <div style="display:flex;align-items:center;gap:10px">
       <div class="status-dot" id="statusDot"></div>
-      <h1><span>G</span>rik</h1>
-      <span class="subtitle">General Roaming of Internet Knowledge</span>
+      <h1><span>W</span>ullie</h1>
+      <span class="subtitle">Wee Unified Life-Logic Intelligence Engine</span>
       <span class="voice-badge" id="voiceBadge" style="display:none"></span>
     </div>
     <div class="controls">
@@ -104,7 +105,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   </header>
 
   <div class="messages" id="messages">
-    <div class="msg system">system ready. say something or tap the mic to talk to grik.</div>
+    <div class="msg system">system ready. say something or tap the mic to talk to wullie.</div>
   </div>
 
   <div class="input-bar">
@@ -130,7 +131,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   const voiceBadge = document.getElementById('voiceBadge');
 
   // crypto.randomUUID is only exposed in secure contexts (https or localhost).
-  // Grik gets accessed over plain http on LAN / Tailscale IPs too, so fall back.
+  // Wullie gets accessed over plain http on LAN / Tailscale IPs too, so fall back.
   function uuid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -141,16 +142,16 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   }
 
   let ws = null;
-  let sessionId = localStorage.getItem('grik-session') || uuid();
-  localStorage.setItem('grik-session', sessionId);
-  let ttsEnabled = localStorage.getItem('grik-tts') !== 'false';
+  let sessionId = localStorage.getItem('wullie-session') || uuid();
+  localStorage.setItem('wullie-session', sessionId);
+  let ttsEnabled = localStorage.getItem('wullie-tts') !== 'false';
   let thinkingEl = null;
   let isRecording = false;
   let recognition = null;
   let mediaRecorder = null;
   let audioChunks = [];
   let currentAudio = null;
-  let lastGrikMsg = null;
+  let lastWullieMsg = null;
 
   // server capabilities (filled on load)
   let serverTts = false;
@@ -206,7 +207,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
         showThinking();
       } else if (data.type === 'reply') {
         removeThinking();
-        lastGrikMsg = addMessage('grik', data.text);
+        lastWullieMsg = addMessage('wullie', data.text);
         if (ttsEnabled) speak(data.text);
       }
     };
@@ -219,7 +220,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
     div.className = `msg ${role}`;
     const label = document.createElement('div');
     label.className = 'label';
-    label.textContent = role === 'user' ? 'You' : 'Grik';
+    label.textContent = role === 'user' ? 'You' : 'Wullie';
     div.appendChild(label);
     const body = document.createElement('div');
     body.textContent = text;
@@ -386,7 +387,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   }
 
   async function speakElevenLabs(text) {
-    if (lastGrikMsg) lastGrikMsg.classList.add('speaking');
+    if (lastWullieMsg) lastWullieMsg.classList.add('speaking');
     try {
       const r = await fetch('/api/tts', {
         method: 'POST',
@@ -400,18 +401,18 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
       currentAudio = new Audio(url);
       currentAudio.onended = () => {
         URL.revokeObjectURL(url);
-        if (lastGrikMsg) lastGrikMsg.classList.remove('speaking');
+        if (lastWullieMsg) lastWullieMsg.classList.remove('speaking');
         currentAudio = null;
       };
       currentAudio.onerror = () => {
         URL.revokeObjectURL(url);
-        if (lastGrikMsg) lastGrikMsg.classList.remove('speaking');
+        if (lastWullieMsg) lastWullieMsg.classList.remove('speaking');
         currentAudio = null;
         speakBrowser(text);
       };
       currentAudio.play();
     } catch(e) {
-      if (lastGrikMsg) lastGrikMsg.classList.remove('speaking');
+      if (lastWullieMsg) lastWullieMsg.classList.remove('speaking');
       speakBrowser(text);
     }
   }
@@ -427,8 +428,8 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
       /english.*\b(ir|uk|scot)/i.test(v.name) || /\b(moira|fiona|daniel)\b/i.test(v.name)
     );
     if (preferred) utter.voice = preferred;
-    if (lastGrikMsg) lastGrikMsg.classList.add('speaking');
-    utter.onend = () => { if (lastGrikMsg) lastGrikMsg.classList.remove('speaking'); };
+    if (lastWullieMsg) lastWullieMsg.classList.add('speaking');
+    utter.onend = () => { if (lastWullieMsg) lastWullieMsg.classList.remove('speaking'); };
     window.speechSynthesis.speak(utter);
   }
 
@@ -445,7 +446,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   btnTts.addEventListener('click', () => {
     ttsEnabled = !ttsEnabled;
     btnTts.classList.toggle('active', ttsEnabled);
-    localStorage.setItem('grik-tts', ttsEnabled);
+    localStorage.setItem('wullie-tts', ttsEnabled);
     if (!ttsEnabled) stopAudio();
   });
 
@@ -453,7 +454,7 @@ header .subtitle{font-size:10px;color:var(--text-dim);margin-left:8px;text-trans
   btnClear.addEventListener('click', () => {
     stopAudio();
     sessionId = uuid();
-    localStorage.setItem('grik-session', sessionId);
+    localStorage.setItem('wullie-session', sessionId);
     messages.innerHTML = '<div class="msg system">New conversation started.</div>';
     if (ws) ws.close();
     connect();

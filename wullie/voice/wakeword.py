@@ -1,11 +1,11 @@
 """
 Wake-word detection.
 
-Grik stays deaf until it hears its name. We use OpenWakeWord — fully open
+Wullie stays deaf until it hears its name. We use OpenWakeWord — fully open
 source, runs locally, no account or API key needed.
 
-The bundled "hey_jarvis" model is used by default (closest to "Hey Grik").
-To train a custom "Grik" wake word, see:
+The bundled "hey_jarvis" model is used by default (closest to "Hey Wullie").
+To train a custom "Wullie" wake word, see:
   https://github.com/dscripka/openWakeWord#training-new-models
 
 Nothing is streamed anywhere: audio is processed locally, frame by frame,
@@ -21,7 +21,7 @@ from openwakeword.model import Model
 
 from ..config import config
 
-log = logging.getLogger("grik.wake")
+log = logging.getLogger("wullie.wake")
 
 SAMPLE_RATE = 16000
 FRAME_SAMPLES = 1280  # 80ms at 16kHz — the chunk size OpenWakeWord expects

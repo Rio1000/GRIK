@@ -8,7 +8,7 @@ from faster_whisper import WhisperModel
 
 from ..config import config
 
-log = logging.getLogger("grik.stt")
+log = logging.getLogger("wullie.stt")
 
 
 class STT:

@@ -1,14 +1,14 @@
 """
-Grik entrypoint.
+Wullie entrypoint.
 
-  python -m grik.main                       # full voice mode (mic + all keys)
-  GRIK_TEXT_MODE=true python -m grik.main    # type instead of talk (dev)
-  GRIK_WEB_MODE=true python -m grik.main    # web UI on port 7777
+  python -m wullie.main                       # full voice mode (mic + all keys)
+  WULLIE_TEXT_MODE=true python -m wullie.main    # type instead of talk (dev)
+  WULLIE_WEB_MODE=true python -m wullie.main    # web UI on port 7777
 """
 import logging
 
 from .config import config
-from .brain import Grik
+from .brain import Wullie
 
 
 def main():
@@ -18,8 +18,8 @@ def main():
         from .web.server import run
         run()
     elif config.text_mode:
-        grik = Grik()
-        print("Grik (text mode). Type a command, or 'quit'.\n")
+        wullie = Wullie()
+        print("Wullie (text mode). Type a command, or 'quit'.\n")
         while True:
             try:
                 text = input("you> ").strip()
@@ -28,7 +28,7 @@ def main():
             if text.lower() in {"quit", "exit"}:
                 break
             if text:
-                print(f"grik> {grik.ask(text)}\n")
+                print(f"wullie> {wullie.ask(text)}\n")
     else:
         from .voice.loop import run_voice_loop
         run_voice_loop()
