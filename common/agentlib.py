@@ -1,5 +1,5 @@
 """
-agentlib — the shared runtime every Grik agent is built on.
+agentlib — the shared runtime every Wullie agent is built on.
 
 An agent is: a name, a system prompt, and a set of Python tool functions.
 This module turns those into a FastAPI service exposing:
@@ -21,7 +21,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 _client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
-_MODEL = os.getenv("GRIK_BRAIN_MODEL", "claude-sonnet-4-6")
+_MODEL = os.getenv("WULLIE_BRAIN_MODEL", "claude-sonnet-4-6")
 
 
 class Tool:
@@ -37,7 +37,7 @@ class Task(BaseModel):
 
 
 def make_agent_app(name: str, system_prompt: str, tools: list[Tool]) -> FastAPI:
-    app = FastAPI(title=f"grik-agent-{name}")
+    app = FastAPI(title=f"wullie-agent-{name}")
     by_name = {t.name: t for t in tools}
     schemas = [t.schema for t in tools]
 

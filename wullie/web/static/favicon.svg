@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- CRT black background with border -->
+  <rect width="32" height="32" fill="#0a0d0a"/>
+  <rect x="0.5" y="0.5" width="31" height="31" fill="none" stroke="#2f5c34" stroke-width="1"/>
+
+  <!-- phosphor glow filter -->
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="0.6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- blocky "W" as a single polygon, glowing green -->
+  <g filter="url(#glow)">
+    <polygon
+      points="4,6 9,6 11.5,20 14,10 18,10 20.5,20 23,6 28,6 24,26 19,26 16,15 13,26 8,26"
+      fill="#39ff6a"/>
+  </g>
+
+  <!-- amber cursor block, offset like a terminal caret -->
+  <rect x="26" y="24" width="4" height="4" fill="#ffb000">
+    <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- subtle scanlines overlay -->
+  <g fill="#000" opacity="0.3">
+    <rect y="2"  width="32" height="1"/>
+    <rect y="6"  width="32" height="1"/>
+    <rect y="10" width="32" height="1"/>
+    <rect y="14" width="32" height="1"/>
+    <rect y="18" width="32" height="1"/>
+    <rect y="22" width="32" height="1"/>
+    <rect y="26" width="32" height="1"/>
+    <rect y="30" width="32" height="1"/>
+  </g>
+</svg>
